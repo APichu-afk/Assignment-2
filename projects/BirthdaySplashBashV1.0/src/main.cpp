@@ -68,153 +68,6 @@ We have been using Parsec, a screen sharing program, to play online "locally" wi
 #define DNS_Y 3.0f
 #define NUM_HITBOXES_TEST 2
 
-/*
-	Handles debug messages from OpenGL
-	https://www.khronos.org/opengl/wiki/Debug_Output#Message_Components
-	@param source    Which part of OpenGL dispatched the message
-	@param type      The type of message (ex: error, performance issues, deprecated behavior)
-	@param id        The ID of the error or message (to distinguish between different types of errors, like nullref or index out of range)
-	@param severity  The severity of the message (from High to Notification)
-	@param length    The length of the message
-	@param message   The human readable message from OpenGL
-	@param userParam The pointer we set with glDebugMessageCallback (should be the game pointer)
-*/
-void GlDebugMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
-	std::string sourceTxt;
-	switch (source) {
-	case GL_DEBUG_SOURCE_API: sourceTxt = "DEBUG"; break;
-	case GL_DEBUG_SOURCE_WINDOW_SYSTEM: sourceTxt = "WINDOW"; break;
-	case GL_DEBUG_SOURCE_SHADER_COMPILER: sourceTxt = "SHADER"; break;
-	case GL_DEBUG_SOURCE_THIRD_PARTY: sourceTxt = "THIRD PARTY"; break;
-	case GL_DEBUG_SOURCE_APPLICATION: sourceTxt = "APP"; break;
-	case GL_DEBUG_SOURCE_OTHER: default: sourceTxt = "OTHER"; break;
-	}
-	switch (severity) {
-	case GL_DEBUG_SEVERITY_LOW:          LOG_INFO("[{}] {}", sourceTxt, message); break;
-	case GL_DEBUG_SEVERITY_MEDIUM:       LOG_WARN("[{}] {}", sourceTxt, message); break;
-	case GL_DEBUG_SEVERITY_HIGH:         LOG_ERROR("[{}] {}", sourceTxt, message); break;
-		#ifdef LOG_GL_NOTIFICATIONS
-	case GL_DEBUG_SEVERITY_NOTIFICATION: LOG_INFO("[{}] {}", sourceTxt, message); break;
-		#endif
-	default: break;
-	}
-}
-
-GLFWwindow* window;
-
-void GlfwWindowResizedCallback(GLFWwindow* window, int width, int height) {
-	glViewport(0, 0, width, height);
-	Application::Instance().ActiveScene->Registry().view<Camera>().each([=](Camera & cam) {
-		cam.ResizeWindow(width, height);
-	});
-}
-
-bool InitGLFW() {
-	if (glfwInit() == GLFW_FALSE) {
-		LOG_ERROR("Failed to initialize GLFW");
-		return false;
-	}
-
-#ifdef _DEBUG
-	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
-#endif
-	
-	//Create a new GLFW window
-	window = glfwCreateWindow(800, 800, "Birthday Splash Bash", nullptr, nullptr);
-	glfwMakeContextCurrent(window);
-
-	// Set our window resized callback
-	glfwSetWindowSizeCallback(window, GlfwWindowResizedCallback);
-
-	// Store the window in the application singleton
-	Application::Instance().Window = window;
-
-	return true;
-}
-
-bool InitGLAD() {
-	if (gladLoadGLLoader((GLADloadproc)glfwGetProcAddress) == 0) {
-		LOG_ERROR("Failed to initialize Glad");
-		return false;
-	}
-	return true;
-}
-
-void InitImGui() {
-	// Creates a new ImGUI context
-	ImGui::CreateContext();
-	// Gets our ImGUI input/output 
-	ImGuiIO& io = ImGui::GetIO();
-	// Enable keyboard navigation
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-	// Allow docking to our window
-	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-	// Allow multiple viewports (so we can drag ImGui off our window)
-	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-	// Allow our viewports to use transparent backbuffers
-	io.ConfigFlags |= ImGuiConfigFlags_TransparentBackbuffers;
-
-	// Set up the ImGui implementation for OpenGL
-	ImGui_ImplGlfw_InitForOpenGL(window, true);
-	ImGui_ImplOpenGL3_Init("#version 410");
-
-	// Dark mode FTW
-	ImGui::StyleColorsDark();
-
-	// Get our imgui style
-	ImGuiStyle& style = ImGui::GetStyle();
-	//style.Alpha = 1.0f;
-	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-		style.WindowRounding = 0.0f;
-		style.Colors[ImGuiCol_WindowBg].w = 0.8f;
-	}
-}
-
-void ShutdownImGui()
-{
-	// Cleanup the ImGui implementation
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplGlfw_Shutdown();
-	// Destroy our ImGui context
-	ImGui::DestroyContext();
-}
-
-std::vector<std::function<void()>> imGuiCallbacks;
-void RenderImGui() {
-	// Implementation new frame
-	ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplGlfw_NewFrame();
-	// ImGui context new frame
-	ImGui::NewFrame();
-
-	if (ImGui::Begin("Debug")) {
-		// Render our GUI stuff
-		for (auto& func : imGuiCallbacks) {
-			func();
-		}
-		ImGui::End();
-	}
-	
-	// Make sure ImGui knows how big our window is
-	ImGuiIO& io = ImGui::GetIO();
-	int width{ 0 }, height{ 0 };
-	glfwGetWindowSize(window, &width, &height);
-	io.DisplaySize = ImVec2((float)width, (float)height);
-
-	// Render all of our ImGui elements
-	ImGui::Render();
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-	// If we have multiple viewports enabled (can drag into a new window)
-	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-		// Update the windows that ImGui is using
-		ImGui::UpdatePlatformWindows();
-		ImGui::RenderPlatformWindowsDefault();
-		// Restore our gl context
-		glfwMakeContextCurrent(window);
-	}
-}
-
 // Borrowed collision from https://learnopengl.com/In-Practice/2D-Game/Collisions/Collision-detection AABB collision
 bool Collision(Transform& hitbox1, Transform& hitbox2)
 {
@@ -226,48 +79,18 @@ bool Collision(Transform& hitbox1, Transform& hitbox2)
 	return colX && colY;
 }
 
-void RenderVAO(
-	const Shader::sptr& shader,
-	const VertexArrayObject::sptr& vao,
-	const glm::mat4& viewProjection,
-	const Transform& transform)
-{
-	shader->SetUniformMatrix("u_ModelViewProjection", viewProjection * transform.WorldTransform());
-	shader->SetUniformMatrix("u_Model", transform.WorldTransform()); 
-	shader->SetUniformMatrix("u_NormalMatrix", transform.WorldNormalMatrix());
-	vao->Render();
-}
-
-void SetupShaderForFrame(const Shader::sptr& shader, const glm::mat4& view, const glm::mat4& projection) {
-	shader->Bind();
-	// These are the uniforms that update only once per frame
-	shader->SetUniformMatrix("u_View", view);
-	shader->SetUniformMatrix("u_ViewProjection", projection * view);
-	shader->SetUniformMatrix("u_SkyboxMatrix", projection * glm::mat4(glm::mat3(view)));
-	glm::vec3 camPos = glm::inverse(view) * glm::vec4(0,0,0,1);
-	shader->SetUniform("u_CamPos", camPos);
-}
-
 int main() {
-	Logger::Init(); // We'll borrow the logger from the toolkit, but we need to initialize it
-
-	//Initialize GLFW
-	if (!InitGLFW())
-		return 1;
-
-	//Initialize GLAD
-	if (!InitGLAD())
-		return 1;
-
 	int frameIx = 0;
 	float fpsBuffer[128];
 	float minFps, maxFps, avgFps;
 	int selectedVao = 0; // select cube by default
 	std::vector<GameObject> controllables;
 
+	BackendHandler::InitAll();
+
 	// Let OpenGL know that we want debug output, and route it to our handler function
 	glEnable(GL_DEBUG_OUTPUT);
-	glDebugMessageCallback(GlDebugMessage, nullptr);
+	glDebugMessageCallback(BackendHandler::GlDebugMessage, nullptr);
 
 	// Enable texturing
 	glEnable(GL_TEXTURE_2D);
@@ -292,6 +115,11 @@ int main() {
 		reflective->LoadShaderPartFromFile("shaders/vertex_shader.glsl", GL_VERTEX_SHADER);
 		reflective->LoadShaderPartFromFile("shaders/frag_blinn_phong_reflection.glsl", GL_FRAGMENT_SHADER);
 		reflective->Link();
+
+		Shader::sptr colorshader = Shader::Create();
+		colorshader->LoadShaderPartFromFile("shaders/passthrough_vert.glsl", GL_VERTEX_SHADER);
+		colorshader->LoadShaderPartFromFile("shaders/Post/color_correction_frag.glsl", GL_FRAGMENT_SHADER);
+		colorshader->Link();
 
 		glm::vec3 lightPos = glm::vec3(0.0f, 0.0f, 10.0f);
 		glm::vec3 lightCol = glm::vec3(0.9f, 0.85f, 0.5f);
@@ -326,7 +154,7 @@ int main() {
 		shader->SetUniform("u_ambientspeculartoon", ambientspeculartoon);
 
 		// We'll add some ImGui controls to control our shader
-		imGuiCallbacks.push_back([&]() {
+		BackendHandler::imGuiCallbacks.push_back([&]() {
 			if (ImGui::CollapsingHeader("Scene Level Lighting Settings"))
 			{
 				if (ImGui::ColorPicker3("Ambient Color", glm::value_ptr(ambientCol))) {
@@ -449,6 +277,7 @@ int main() {
 		Texture2D::sptr diffuse2 = Texture2D::LoadFromFile("images/TestScene/box.bmp");
 		Texture2D::sptr specular = Texture2D::LoadFromFile("images/TestScene/Stone_001_Specular.png");
 		Texture2D::sptr reflectivity = Texture2D::LoadFromFile("images/TestScene/box-reflections.bmp");
+		LUT3D testcube("cubes/test.cube");
 		#pragma endregion testing scene difuses
 
 		#pragma region Arena1 diffuses
@@ -1021,6 +850,18 @@ int main() {
 		}
 		#pragma endregion Arena1 Objects
 
+		int width, height;
+		glfwGetWindowSize(BackendHandler::window, &width, &height);
+
+		Framebuffer* colorcorrect;
+		GameObject colorcorrectObject = Arena1->CreateEntity("Color correction");
+		{
+			colorcorrect = &colorcorrectObject.emplace<Framebuffer>();
+			colorcorrect->AddColorTarget(GL_RGBA8);
+			colorcorrect->AddDepthTarget();
+			colorcorrect->Init(width, height);
+		}
+
 		#pragma region Skybox
 		/////////////////////////////////// SKYBOX ///////////////////////////////////////////////
 		{
@@ -1081,14 +922,12 @@ int main() {
 				});
 		}
 		
-		InitImGui();
-
 		// Initialize our timing instance and grab a reference for our use
 		Timing& time = Timing::Instance();
 		time.LastFrame = glfwGetTime();
 
 		///// Game loop /////
-		while (!glfwWindowShouldClose(window)) {
+		while (!glfwWindowShouldClose(BackendHandler::window)) {
 			glfwPollEvents();
 
 			// Update the timing
@@ -1109,11 +948,12 @@ int main() {
 				// Note that since we want to make sure we don't copy our key handlers, we need a const
 				// reference!
 				for (const KeyPressWatcher& watcher : keyToggles) {
-					watcher.Poll(window);
+					watcher.Poll(BackendHandler::window);
 				}
 			}
 
 			// Clear the screen
+			colorcorrect->Clear();
 			glClearColor(0.08f, 0.17f, 0.31f, 1.0f);
 			glEnable(GL_DEPTH_TEST);
 			glClearDepth(1.0f);
@@ -1125,6 +965,9 @@ int main() {
 			Shader::sptr current = nullptr;
 			ShaderMaterial::sptr currentMat = nullptr;
 
+
+			colorcorrect->Bind();
+
 			// Grab out camera info from the camera object
 			Transform& camTransform = cameraObject.get<Transform>();
 			glm::mat4 view = glm::inverse(camTransform.LocalTransform());
@@ -1134,12 +977,12 @@ int main() {
 			#pragma region Menu
 			if (Application::Instance().ActiveScene == Menu) {
 
-				if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS)
+				if (glfwGetKey(BackendHandler::window, GLFW_KEY_ENTER) == GLFW_PRESS)
 				{
 					Application::Instance().ActiveScene = Arena1;//just to test change to arena1 later
 				}
 				
-				if (glfwGetKey(window,GLFW_KEY_GRAVE_ACCENT) == GLFW_PRESS)
+				if (glfwGetKey(BackendHandler::window,GLFW_KEY_GRAVE_ACCENT) == GLFW_PRESS)
 				{
 					Application::Instance().ActiveScene = scene;//just to test change to arena1 later
 				}
@@ -1183,7 +1026,7 @@ int main() {
 					if (current != renderer.Material->Shader) {
 						current = renderer.Material->Shader;
 						current->Bind();
-						SetupShaderForFrame(current, view, projection);
+						BackendHandler::SetupShaderForFrame(current, view, projection);
 					}
 					// If the material has changed, apply it
 					if (currentMat != renderer.Material) {
@@ -1191,7 +1034,7 @@ int main() {
 						currentMat->Apply();
 					}
 					// Render the mesh
-					RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
+					BackendHandler::RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
 					});
 			}
 			#pragma endregion Menu
@@ -1199,13 +1042,13 @@ int main() {
 			#pragma region scene(testing)
 			if (Application::Instance().ActiveScene == scene) {
 
-				if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+				if (glfwGetKey(BackendHandler::window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 				{
 					Application::Instance().ActiveScene = Pause;
 				}
 
 				// Draw our ImGui content
-				RenderImGui();
+				BackendHandler::RenderImGui();
 
 				//Hit detection test
 				if (Collision(objDuncet.get<Transform>(), Hitboxes[0].get<Transform>())) {
@@ -1224,6 +1067,7 @@ int main() {
 						}
 					}
 				});
+
 
 				// Update all world matrices for this frame
 				scene->Registry().view<Transform>().each([](entt::entity entity, Transform& t) {
@@ -1254,7 +1098,7 @@ int main() {
 					if (current != renderer.Material->Shader) {
 						current = renderer.Material->Shader;
 						current->Bind();
-						SetupShaderForFrame(current, view, projection);
+						BackendHandler::SetupShaderForFrame(current, view, projection);
 					}
 					// If the material has changed, apply it
 					if (currentMat != renderer.Material) {
@@ -1262,7 +1106,7 @@ int main() {
 						currentMat->Apply();
 					}
 					// Render the mesh
-					RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
+					BackendHandler::RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
 				});
 			}
 			#pragma endregion scene(testing)
@@ -1274,7 +1118,7 @@ int main() {
 				view = glm::inverse(camTransform.LocalTransform());
 				projection = cameraObject.get<Camera>().GetProjection();
 				viewProjection = projection * view;
-				if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+				if (glfwGetKey(BackendHandler::window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 				{
 					Application::Instance().ActiveScene = Pause;
 				}
@@ -1321,7 +1165,7 @@ int main() {
 					if (current != renderer.Material->Shader) {
 						current = renderer.Material->Shader;
 						current->Bind();
-						SetupShaderForFrame(current, view, projection);
+						BackendHandler::SetupShaderForFrame(current, view, projection);
 					}
 					// If the material has changed, apply it
 					if (currentMat != renderer.Material) {
@@ -1329,7 +1173,7 @@ int main() {
 						currentMat->Apply();
 					}
 					// Render the mesh
-					RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
+					BackendHandler::RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
 				});
 			}
 			#pragma endregion Arena 1 scene stuff
@@ -1337,12 +1181,12 @@ int main() {
 			#pragma region Pause
 			if (Application::Instance().ActiveScene == Pause) {
 
-				if (glfwGetKey(window, GLFW_KEY_GRAVE_ACCENT) == GLFW_PRESS)
+				if (glfwGetKey(BackendHandler::window, GLFW_KEY_GRAVE_ACCENT) == GLFW_PRESS)
 				{
 					Application::Instance().ActiveScene = scene;//just to test change to arena1 later
 				}
 
-				if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS)
+				if (glfwGetKey(BackendHandler::window, GLFW_KEY_ENTER) == GLFW_PRESS)
 				{
 					Application::Instance().ActiveScene = Arena1;//just to test change to arena1 later
 				}
@@ -1386,7 +1230,7 @@ int main() {
 					if (current != renderer.Material->Shader) {
 						current = renderer.Material->Shader;
 						current->Bind();
-						SetupShaderForFrame(current, view, projection);
+						BackendHandler::SetupShaderForFrame(current, view, projection);
 					}
 					// If the material has changed, apply it
 					if (currentMat != renderer.Material) {
@@ -1394,21 +1238,37 @@ int main() {
 						currentMat->Apply();
 					}
 					// Render the mesh
-					RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
+					BackendHandler::RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
 					});
 			}
 			#pragma endregion Pause
 
 			#pragma endregion Rendering seperate scenes
 			
+			colorcorrect->Unbind();
+
+			colorshader->Bind();
+
+			colorcorrect->BindColorAsTexture(0, 0);
+			testcube.bind(30);
+
+			colorcorrect->DrawFullscreenQuad();
+
+			testcube.unbind();
+
+			colorcorrect->UnbindTexture(0);
+
+			colorshader->UnBind();
+
+
 			scene->Poll();
-			glfwSwapBuffers(window);
+			glfwSwapBuffers(BackendHandler::window);
 			time.LastFrame = time.CurrentFrame;
 		}
 
 		// Nullify scene so that we can release references
 		Application::Instance().ActiveScene = nullptr;
-		ShutdownImGui();
+		BackendHandler::ShutdownImGui();
 	}	
 
 	// Clean up the toolkit logger so we don't leak memory

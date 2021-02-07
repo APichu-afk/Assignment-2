@@ -3,6 +3,17 @@
 GLFWwindow* BackendHandler::window = nullptr;
 std::vector<std::function<void()>> BackendHandler::imGuiCallbacks;
 
+/*
+	Handles debug messages from OpenGL
+	https://www.khronos.org/opengl/wiki/Debug_Output#Message_Components
+	@param source    Which part of OpenGL dispatched the message
+	@param type      The type of message (ex: error, performance issues, deprecated behavior)
+	@param id        The ID of the error or message (to distinguish between different types of errors, like nullref or index out of range)
+	@param severity  The severity of the message (from High to Notification)
+	@param length    The length of the message
+	@param message   The human readable message from OpenGL
+	@param userParam The pointer we set with glDebugMessageCallback (should be the game pointer)
+*/
 
 void BackendHandler::GlDebugMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
 {
