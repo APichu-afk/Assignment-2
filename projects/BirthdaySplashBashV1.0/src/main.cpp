@@ -153,6 +153,80 @@ int main() {
 		shader->SetUniform("u_ambientspecular", ambientandspecular);
 		shader->SetUniform("u_ambientspeculartoon", ambientspeculartoon);
 
+		#pragma endregion Shader and ImGui
+
+		// GL states
+		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_CULL_FACE);
+		glDepthFunc(GL_LEQUAL); // New 
+
+		#pragma region TEXTURE LOADING
+
+		//Loads in 2 of the same texture will fix later
+		#pragma region testing scene difuses
+		// Load some textures from files
+		Texture2D::sptr diffuse = Texture2D::LoadFromFile("images/TestScene/Stone_001_Diffuse.png");
+		Texture2D::sptr diffuseGround = Texture2D::LoadFromFile("images/TestScene/grass.jpg");
+		Texture2D::sptr diffuseDunce = Texture2D::LoadFromFile("images/TestScene/Dunce.png");
+		Texture2D::sptr diffuseDuncet = Texture2D::LoadFromFile("images/TestScene/Duncet.png");
+		Texture2D::sptr diffuseSlide = Texture2D::LoadFromFile("images/TestScene/Slide.png");
+		Texture2D::sptr diffuseSwing = Texture2D::LoadFromFile("images/TestScene/Swing.png");
+		Texture2D::sptr diffuseTable = Texture2D::LoadFromFile("images//TestScene/Table.png");
+		Texture2D::sptr diffuseTreeBig = Texture2D::LoadFromFile("images/TestScene/TreeBig.png");
+		Texture2D::sptr diffuseRedBalloon = Texture2D::LoadFromFile("images/TestScene/BalloonRed.png");
+		Texture2D::sptr diffuseYellowBalloon = Texture2D::LoadFromFile("images/TestScene/BalloonYellow.png");
+		Texture2D::sptr diffuse2 = Texture2D::LoadFromFile("images/TestScene/box.bmp");
+		Texture2D::sptr specular = Texture2D::LoadFromFile("images/TestScene/Stone_001_Specular.png");
+		Texture2D::sptr reflectivity = Texture2D::LoadFromFile("images/TestScene/box-reflections.bmp");
+		#pragma endregion testing scene difuses
+
+		LUT3D neutralcube("cubes/Neutral-512.cube");
+		LUT3D coolcube("cubes/CoolCube.cube");
+		LUT3D customcube("cubes/CustomCube.cube");
+		LUT3D warmcube("cubes/WarmCube.cube");
+
+		#pragma region Arena1 diffuses
+		Texture2D::sptr diffuseTrees = Texture2D::LoadFromFile("images/Arena1/Trees.png");
+		Texture2D::sptr diffuseFlowers = Texture2D::LoadFromFile("images/Arena1/Flower.png");
+		Texture2D::sptr diffuseGroundArena = Texture2D::LoadFromFile("images/Arena1/Ground.png");
+		Texture2D::sptr diffuseHedge = Texture2D::LoadFromFile("images/Arena1/Hedge.png");
+		Texture2D::sptr diffuseBalloons = Texture2D::LoadFromFile("images/Arena1/Ballons.png");
+		Texture2D::sptr diffuseDunceArena = Texture2D::LoadFromFile("images/Arena1/Dunce.png");
+		Texture2D::sptr diffuseDuncetArena = Texture2D::LoadFromFile("images/Arena1/Duncet.png");
+		Texture2D::sptr diffusered = Texture2D::LoadFromFile("images/Arena1/red.png");
+		Texture2D::sptr diffuseyellow = Texture2D::LoadFromFile("images/Arena1/yellow.png");
+		Texture2D::sptr diffusepink = Texture2D::LoadFromFile("images/Arena1/pink.png");
+		Texture2D::sptr diffusemonkeybar = Texture2D::LoadFromFile("images/Arena1/MonkeyBar.png");
+		Texture2D::sptr diffusecake = Texture2D::LoadFromFile("images/Arena1/SliceOfCake.png");
+		Texture2D::sptr diffusesandbox = Texture2D::LoadFromFile("images/Arena1/SandBox.png");
+		Texture2D::sptr diffuseroundabout = Texture2D::LoadFromFile("images/Arena1/RoundAbout.png");
+		Texture2D::sptr diffusepinwheel = Texture2D::LoadFromFile("images/Arena1/Pinwheel.png");
+		#pragma endregion Arena1 diffuses
+
+		// Load the cube map
+		//TextureCubeMap::sptr environmentMap = TextureCubeMap::LoadFromImages("images/cubemaps/skybox/sample.jpg");
+		TextureCubeMap::sptr environmentMap = TextureCubeMap::LoadFromImages("images/cubemaps/skybox/ocean.jpg"); 
+
+		// Creating an empty texture
+		Texture2DDescription desc = Texture2DDescription();  
+		desc.Width = 1;
+		desc.Height = 1;
+		desc.Format = InternalFormat::RGB8;
+		Texture2D::sptr texture2 = Texture2D::Create(desc);
+		// Clear it with a white colour
+		texture2->Clear();
+
+		#pragma endregion TEXTURE LOADING
+
+		//variables to change from differnt color correction cubes
+		int no = 1;
+		int	warm = 0;
+		int cool = 0;
+		bool custom = 0;
+		bool warmtoggle = true;
+		bool cooltoggle = true;
+		bool customtoggle = true;
+
 		// We'll add some ImGui controls to control our shader
 		BackendHandler::imGuiCallbacks.push_back([&]() {
 			if (ImGui::CollapsingHeader("Scene Level Lighting Settings"))
@@ -185,7 +259,6 @@ int main() {
 					shader->SetUniform("u_LightAttenuationQuadratic", lightQuadraticFalloff);
 				}
 			}
-
 			/*Toggle buttons
 			No lighting
 			Ambient only
@@ -232,6 +305,69 @@ int main() {
 					shader->SetUniform("u_ambientspecular", ambientandspecular = 0);
 					shader->SetUniform("u_ambientspeculartoon", ambientspeculartoon = 1);
 				}
+
+				if (cooltoggle) {
+					if (ImGui::Button("Cool"))
+					{
+						cooltoggle = false;
+						no = 0;
+						cool = 1;
+						warm = 0;
+						custom = 0;
+					}
+				}
+				else{
+					if (ImGui::Button("Neutral"))
+					{
+						cooltoggle = true;
+						no = 1;
+						cool = 0;
+						warm = 0;
+						custom = 0;
+					}
+				}
+				
+				if (warmtoggle) {
+					if (ImGui::Button("Warm"))
+					{
+						warmtoggle = false;
+						no = 0;
+						cool = 0;
+						warm = 1;
+						custom = 0;
+					}
+				}
+				else {
+					if (ImGui::Button("Neutral"))
+					{
+						warmtoggle = true;
+						no = 1;
+						cool = 0;
+						warm = 0;
+						custom = 0;
+					}
+				}
+				
+				if (customtoggle) {
+					if (ImGui::Button("Custom"))
+					{
+						customtoggle = false;
+						no = 0;
+						cool = 0;
+						warm = 0;
+						custom = 1;
+					}
+				}
+				else {
+					if (ImGui::Button("Neutral"))
+					{
+						customtoggle = true;
+						no = 1;
+						cool = 0;
+						warm = 0;
+						custom = 0;
+					}
+				}
 			}
 
 			auto name = controllables[selectedVao].get<GameObjectTag>().Name;
@@ -252,66 +388,6 @@ int main() {
 			ImGui::PlotLines("FPS", fpsBuffer, 128);
 			ImGui::Text("MIN: %f MAX: %f AVG: %f", minFps, maxFps, avgFps / 128.0f);
 			});
-
-		#pragma endregion Shader and ImGui
-
-		// GL states
-		glEnable(GL_DEPTH_TEST);
-		glEnable(GL_CULL_FACE);
-		glDepthFunc(GL_LEQUAL); // New 
-
-		#pragma region TEXTURE LOADING
-
-		#pragma region testing scene difuses
-		// Load some textures from files
-		Texture2D::sptr diffuse = Texture2D::LoadFromFile("images/TestScene/Stone_001_Diffuse.png");
-		Texture2D::sptr diffuseGround = Texture2D::LoadFromFile("images/TestScene/grass.jpg");
-		Texture2D::sptr diffuseDunce = Texture2D::LoadFromFile("images/TestScene/Dunce.png");
-		Texture2D::sptr diffuseDuncet = Texture2D::LoadFromFile("images/TestScene/Duncet.png");
-		Texture2D::sptr diffuseSlide = Texture2D::LoadFromFile("images/TestScene/Slide.png");
-		Texture2D::sptr diffuseSwing = Texture2D::LoadFromFile("images/TestScene/Swing.png");
-		Texture2D::sptr diffuseTable = Texture2D::LoadFromFile("images//TestScene/Table.png");
-		Texture2D::sptr diffuseTreeBig = Texture2D::LoadFromFile("images/TestScene/TreeBig.png");
-		Texture2D::sptr diffuseRedBalloon = Texture2D::LoadFromFile("images/TestScene/BalloonRed.png");
-		Texture2D::sptr diffuseYellowBalloon = Texture2D::LoadFromFile("images/TestScene/BalloonYellow.png");
-		Texture2D::sptr diffuse2 = Texture2D::LoadFromFile("images/TestScene/box.bmp");
-		Texture2D::sptr specular = Texture2D::LoadFromFile("images/TestScene/Stone_001_Specular.png");
-		Texture2D::sptr reflectivity = Texture2D::LoadFromFile("images/TestScene/box-reflections.bmp");
-		LUT3D testcube("cubes/test.cube");
-		#pragma endregion testing scene difuses
-
-		#pragma region Arena1 diffuses
-		Texture2D::sptr diffuseTrees = Texture2D::LoadFromFile("images/Arena1/Trees.png");
-		Texture2D::sptr diffuseFlowers = Texture2D::LoadFromFile("images/Arena1/Flower.png");
-		Texture2D::sptr diffuseGroundArena = Texture2D::LoadFromFile("images/Arena1/Ground.png");
-		Texture2D::sptr diffuseHedge = Texture2D::LoadFromFile("images/Arena1/Hedge.png");
-		Texture2D::sptr diffuseBalloons = Texture2D::LoadFromFile("images/Arena1/Ballons.png");
-		Texture2D::sptr diffuseDunceArena = Texture2D::LoadFromFile("images/Arena1/Dunce.png");
-		Texture2D::sptr diffuseDuncetArena = Texture2D::LoadFromFile("images/Arena1/Duncet.png");
-		Texture2D::sptr diffusered = Texture2D::LoadFromFile("images/Arena1/red.png");
-		Texture2D::sptr diffuseyellow = Texture2D::LoadFromFile("images/Arena1/yellow.png");
-		Texture2D::sptr diffusepink = Texture2D::LoadFromFile("images/Arena1/pink.png");
-		Texture2D::sptr diffusemonkeybar = Texture2D::LoadFromFile("images/Arena1/MonkeyBar.png");
-		Texture2D::sptr diffusecake = Texture2D::LoadFromFile("images/Arena1/SliceOfCake.png");
-		Texture2D::sptr diffusesandbox = Texture2D::LoadFromFile("images/Arena1/SandBox.png");
-		Texture2D::sptr diffuseroundabout = Texture2D::LoadFromFile("images/Arena1/RoundAbout.png");
-		Texture2D::sptr diffusepinwheel = Texture2D::LoadFromFile("images/Arena1/Pinwheel.png");
-		#pragma endregion Arena1 diffuses
-
-		// Load the cube map
-		//TextureCubeMap::sptr environmentMap = TextureCubeMap::LoadFromImages("images/cubemaps/skybox/sample.jpg");
-		TextureCubeMap::sptr environmentMap = TextureCubeMap::LoadFromImages("images/cubemaps/skybox/ocean.jpg"); 
-
-		// Creating an empty texture
-		Texture2DDescription desc = Texture2DDescription();  
-		desc.Width = 1;
-		desc.Height = 1;
-		desc.Format = InternalFormat::RGB8;
-		Texture2D::sptr texture2 = Texture2D::Create(desc);
-		// Clear it with a white colour
-		texture2->Clear();
-
-		#pragma endregion TEXTURE LOADING
 
 		#pragma region Scene Generation
 		
@@ -1250,11 +1326,34 @@ int main() {
 			colorshader->Bind();
 
 			colorcorrect->BindColorAsTexture(0, 0);
-			testcube.bind(30);
+
+			if (no == 1) {
+				neutralcube.bind(30);
+			}
+			if (cool == 1){
+				coolcube.bind(30);
+			}
+			if (warm == 1) {
+				warmcube.bind(30);
+			}
+			if (custom == 1) {
+				customcube.bind(30);
+			}
 
 			colorcorrect->DrawFullscreenQuad();
 
-			testcube.unbind();
+			if (no == 1) {
+				neutralcube.unbind();
+			}
+			if (cool == 1) {
+				coolcube.unbind();
+			}
+			if (warm == 1) {
+				warmcube.unbind();
+			}
+			if (custom == 1) {
+				customcube.unbind();
+			}
 
 			colorcorrect->UnbindTexture(0);
 
