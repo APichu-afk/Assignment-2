@@ -51,6 +51,7 @@ We have been using Parsec, a screen sharing program, to play online "locally" wi
 #include "Utilities/NotObjLoader.h"
 #include "Utilities/ObjLoader.h"
 #include "Utilities/VertexTypes.h"
+#include "Utilities/BackendHandler.h"
 #include "Gameplay/Scene.h"
 #include "Gameplay/ShaderMaterial.h"
 #include "Gameplay/RendererComponent.h"
@@ -818,21 +819,6 @@ int main() {
 			pathing->Points.push_back({ -2.5f,  -5.0f, 3.0f });
 			pathing->Points.push_back({ 2.5f,  -5.0f, 3.0f });
 			pathing->Speed = 2.0f;
-		}
-		
-		//Taken from week 3 tutorial because I wanted random trees from our game
-		std::vector<GameObject> randomTrees;
-		{
-			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/TestScene/TreeBig.obj");
-			for (int i = 0; i < NUM_TREES / 2; i++)
-			{
-				randomTrees.push_back(scene->CreateEntity("simplePine" + (std::to_string(i + 1))));
-				randomTrees[i].emplace<RendererComponent>().SetMesh(vao).SetMaterial(materialTreeBig);
-				//Randomly places
-				randomTrees[i].get<Transform>().SetLocalPosition(glm::vec3(Util::GetRandomNumberBetween(glm::vec2(-PLANE_X, -PLANE_Y), glm::vec2(PLANE_X, PLANE_Y), glm::vec2(-DNS_X, -DNS_Y), glm::vec2(DNS_X, DNS_Y)), 6.0f));
-				randomTrees[i].get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
-				randomTrees[i].get<Transform>().SetLocalScale(0.5f, 0.5f, 0.5f);
-			}
 		}
 
 		GameObject objSwing = scene->CreateEntity("Swing");
