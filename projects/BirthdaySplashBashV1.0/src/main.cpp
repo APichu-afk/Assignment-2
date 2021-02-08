@@ -190,6 +190,7 @@ int main() {
 		Texture2D::sptr diffuseFlowers = Texture2D::LoadFromFile("images/Arena1/Flower.png");
 		Texture2D::sptr diffuseGroundArena = Texture2D::LoadFromFile("images/Arena1/Ground.png");
 		Texture2D::sptr diffuseHedge = Texture2D::LoadFromFile("images/Arena1/Hedge.png");
+		Texture2D::sptr diffuseCake = Texture2D::LoadFromFile("images/Arena1/SliceOfCake.png");
 		Texture2D::sptr diffuseBalloons = Texture2D::LoadFromFile("images/Arena1/Ballons.png");
 		Texture2D::sptr diffuseDunceArena = Texture2D::LoadFromFile("images/Arena1/Dunce.png");
 		Texture2D::sptr diffuseDuncetArena = Texture2D::LoadFromFile("images/Arena1/Duncet.png");
@@ -565,6 +566,14 @@ int main() {
 		materialHedge->Set("s_Specular", specular);
 		materialHedge->Set("u_Shininess", 8.0f);
 		materialHedge->Set("u_TextureMix", 0.0f);
+
+		ShaderMaterial::sptr materialCake = ShaderMaterial::Create();
+		materialCake->Shader = shader;
+		materialCake->Set("s_Diffuse", diffuseCake);
+		materialCake->Set("s_Diffuse2", diffuse2);
+		materialCake->Set("s_Specular", specular);
+		materialCake->Set("u_Shininess", 8.0f);
+		materialCake->Set("u_TextureMix", 0.0f);
 		
 		ShaderMaterial::sptr materialBalloons = ShaderMaterial::Create();  
 		materialBalloons->Shader = shader;
@@ -648,7 +657,7 @@ int main() {
 		}
 
 		#pragma region Test(scene) Objects
-
+		//make objs RIGHTHERE
 		GameObject objGround = scene->CreateEntity("Ground"); 
 		{
 			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/TestScene/Ground.obj");
@@ -663,7 +672,7 @@ int main() {
 		{
 			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/TestScene/Dunce.obj");
 			objDunce.emplace<RendererComponent>().SetMesh(vao).SetMaterial(materialDunce);
-			objDunce.get<Transform>().SetLocalPosition(0.0f, 0.0f, 0.9f);
+			objDunce.get<Transform>().SetLocalPosition(0.0f, 0.0f, 1.1f);
 			objDunce.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(objDunce);
 		}
@@ -672,7 +681,7 @@ int main() {
 		{
 			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/TestScene/Duncet.obj");
 			objDuncet.emplace<RendererComponent>().SetMesh(vao).SetMaterial(materialDuncet);
-			objDuncet.get<Transform>().SetLocalPosition(2.0f, 0.0f, 0.8f);
+			objDuncet.get<Transform>().SetLocalPosition(2.0f, 0.0f, 1.0f);
 			objDuncet.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(objDuncet);
 		}
@@ -744,20 +753,57 @@ int main() {
 			objTable.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
 			objTable.get<Transform>().SetLocalScale(0.35f, 0.35f, 0.35f);
 		}
+
+		GameObject objMonkeyBar = scene->CreateEntity("monkeybars");//monkeybars
+		{
+			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/TestScene/MonkeyBar.obj");
+			objMonkeyBar.emplace<RendererComponent>().SetMesh(vao).SetMaterial(materialMonkeyBar);
+			objMonkeyBar.get<Transform>().SetLocalPosition(8.0f, -8.0f, 3.0f);
+			objMonkeyBar.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+			objMonkeyBar.get<Transform>().SetLocalScale(0.35f, 0.35f, 0.35f);
+		}
+
+		GameObject objRoundAbout = scene->CreateEntity("roundabout");//ra
+		{
+			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/TestScene/RoundAbout.obj");
+			objRoundAbout.emplace<RendererComponent>().SetMesh(vao).SetMaterial(materialRA);
+			objRoundAbout.get<Transform>().SetLocalPosition(4.0f, -4.0f, 3.0f);
+			objRoundAbout.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+			objRoundAbout.get<Transform>().SetLocalScale(0.35f, 0.35f, 0.35f);
+		}
+
+		GameObject objTable2 = scene->CreateEntity("table2");//ra
+		{
+			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/TestScene/Table.obj");
+			objTable2.emplace<RendererComponent>().SetMesh(vao).SetMaterial(materialTable);
+			objTable2.get<Transform>().SetLocalPosition(-4.5f, -6.0f, 1.25f);
+			objTable2.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+			objTable2.get<Transform>().SetLocalScale(0.35f, 0.35f, 0.35f);
+		}
+
+		GameObject objCake = scene->CreateEntity("cake");//cake
+		{
+			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/TestScene/SliceOfCake.obj");
+			objCake.emplace<RendererComponent>().SetMesh(vao).SetMaterial(materialCake);
+			objCake.get<Transform>().SetLocalPosition(-4.5f, -6.0f, 2.25f);
+			objCake.get<Transform>().SetLocalRotation(90.0f, 0.0f, 45.0f);
+			objCake.get<Transform>().SetLocalScale(0.35f, 0.35f, 0.35f);
+		}
 		
 		//HitBoxes generated using a for loop then each one is given a position
+		
 		std::vector<GameObject> Hitboxes;
 		{
 			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/TestScene/HitBox.obj");
 			for (int i = 0; i < NUM_HITBOXES_TEST; i++)//NUM_HITBOXES_TEST is located at the top of the code
 			{
 				Hitboxes.push_back(scene->CreateEntity("Hitbox" + (std::to_string(i + 1))));
-				Hitboxes[i].emplace<RendererComponent>().SetMesh(vao).SetMaterial(materialTreeBig);//Material does not matter just invisable hitboxes
+				Hitboxes[i].emplace<RendererComponent>().SetMesh(vao).SetMaterial(materialTreeBig);//Material does not matter just invisible hitboxes
 			}
-
-			Hitboxes[0].get<Transform>().SetLocalPosition(4.0f, 4.0f, 2.0f);
-			Hitboxes[1].get<Transform>().SetLocalPosition(-4.0f, -4.0f, 2.0f);
+			//Hitboxes[0].get<Transform>().SetLocalPosition(4.0f, 4.0f, 2.0f);
+			//Hitboxes[1].get<Transform>().SetLocalPosition(-4.0f, -4.0f, 2.0f);
 		}
+		
 
 		#pragma endregion Test(scene) Objects
 
@@ -1118,18 +1164,17 @@ int main() {
 			#pragma region scene(testing)
 			if (Application::Instance().ActiveScene == scene) {
 
+				objRoundAbout.get<Transform>().RotateLocal(0, 150 * time.DeltaTime, 0);
+
 				if (glfwGetKey(BackendHandler::window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 				{
 					Application::Instance().ActiveScene = Pause;
 				}
 
-				// Draw our ImGui content
-				BackendHandler::RenderImGui();
-
 				//Hit detection test
-				if (Collision(objDuncet.get<Transform>(), Hitboxes[0].get<Transform>())) {
-					PlayerMovement::Player2vswall(objDuncet.get<Transform>(), time.DeltaTime);
-				}
+				//if (Collision(objDuncet.get<Transform>(), Hitboxes[0].get<Transform>())) {
+					//PlayerMovement::Player2vswall(objDuncet.get<Transform>(), time.DeltaTime);
+				//}
 
 				//Player Movemenet(seperate from camera controls)
 				PlayerMovement::player1and2move(objDunce.get<Transform>(), objDuncet.get<Transform>(), time.DeltaTime);
@@ -1184,6 +1229,8 @@ int main() {
 					// Render the mesh
 					BackendHandler::RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
 				});
+				// Draw our ImGui content only in the second scene
+				BackendHandler::RenderImGui();//RIGHTHERE
 			}
 			#pragma endregion scene(testing)
 
@@ -1358,6 +1405,8 @@ int main() {
 			colorcorrect->UnbindTexture(0);
 
 			colorshader->UnBind();
+
+			//BackendHandler::RenderImGui();
 
 
 			scene->Poll();

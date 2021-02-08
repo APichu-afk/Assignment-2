@@ -9,7 +9,6 @@ layout (binding = 30) uniform sampler3D u_TexColorGrade;
 
 //effects how greyscale
 //lower the number, the closer we are to regular
-uniform float u_Intensity = 1.0;
 
 void main() 
 {
